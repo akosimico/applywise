@@ -43,3 +43,14 @@ CREATE TABLE IF NOT EXISTS automation_runs (
   ran_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   flagged_count INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS candidate_profiles (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  full_name TEXT NOT NULL DEFAULT '', location TEXT NOT NULL DEFAULT '', target_roles JSONB NOT NULL DEFAULT '[]',
+  skills JSONB NOT NULL DEFAULT '[]', work_preference TEXT NOT NULL DEFAULT 'remote', updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS job_matches (
+  id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, source_url TEXT NOT NULL,
+  title TEXT NOT NULL, company TEXT NOT NULL, location TEXT NOT NULL DEFAULT '', description TEXT NOT NULL DEFAULT '',
+  score INTEGER NOT NULL, match_band TEXT NOT NULL, reasons JSONB NOT NULL, source TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), UNIQUE(user_id, source_url)
+);

@@ -6,6 +6,7 @@ import { MemoryUserStore } from "../server/auth.js";
 import { MemoryResumeStore } from "../server/resume-store.js";
 import { LocalAnalyzer } from "../server/analysis.js";
 import { runFollowUpSweep } from "../server/follow-up.js";
+import { profileFromResume } from "../server/discovery.js";
 
 describe("health endpoint", () => {
   it("reports that the API is running", async () => {
@@ -17,6 +18,15 @@ describe("health endpoint", () => {
 
 describe("follow-up automation", () => {
   it("flags old applied applications and leaves active stages alone", async () => { const store = new MemoryApplicationStore(); const old = new Date(Date.now() - 12 * 86400000).toISOString().slice(0,10); const applied = await store.create("demo-user", {company:"Old Co",role:"Dev",status:"Applied",dateApplied:old,jobDescription:"",notes:"",url:""}); await store.create("demo-user", {company:"Interview Co",role:"Dev",status:"Interview",dateApplied:old,jobDescription:"",notes:"",url:""}); expect(await runFollowUpSweep(store, 10)).toBe(1); expect((await store.find("demo-user", applied.id))?.needsFollowup).toBe(true); });
+});
+
+describe("candidate profile extraction", () => {
+  it("derives searchable skills and preferences from resume text", () => {
+    const profile = profileFromResume("Jane Doe\nBased in Manila\nFrontend Developer\nTypeScript React Node remote experience");
+    expect(profile.fullName).toBe("Jane Doe");
+    expect(profile.skills).toEqual(expect.arrayContaining(["typescript", "react", "node"]));
+    expect(profile.workPreference).toBe("remote");
+  });
 });
 
 describe("resume analysis API", () => {
