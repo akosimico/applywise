@@ -176,7 +176,7 @@ Keep this list visible so scope doesn't creep:
 - [x] Search through a licensed job-listings provider and return original application URLs; do not scrape JobStreet or Indeed
 - [x] Rank listings with hybrid scoring and label them Strong match, Possible match, or Low match with matching reasons
 - [x] Persist and deduplicate recommended listings, and let users add a match to the application tracker
-- [ ] Add provider API credentials and verify Philippines and remote coverage before enabling live results
+- [ ] Add a SerpApi key and verify Philippines and remote coverage before enabling live results
 
 **Milestone check:** A user can upload a resume PDF, review the extracted profile, request matched jobs, and add a promising result to the tracker.
 
