@@ -47,7 +47,9 @@ export function createApp(store: ApplicationStore = new MemoryApplicationStore()
   app.get("/api/applications/:id/analysis", async (request, response) => { const application = await store.find(userId(request), request.params.id); if (!application) return response.sendStatus(404); const result = await resumes.getAnalysis(application.id); return result ? response.json(result) : response.sendStatus(404); });
   app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
     console.error("API request failed", error);
-    response.status(500).json({ error: "The database is unavailable. Confirm Docker is running and that DATABASE_URL is correct." });
+    const message = error instanceof Error ? error.message : "Unknown server error";
+    const status = error instanceof multer.MulterError ? 400 : 500;
+    response.status(status).json({ error: `Request failed: ${message}` });
   });
   return app;
 }
