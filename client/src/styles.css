@@ -1,0 +1,6 @@
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #172033; background: #f6f8fc; }
+body { margin: 0; }
+main { max-width: 780px; margin: 12vh auto; padding: 2rem; }
+h1 { font-size: 3rem; margin-bottom: .25rem; }
+.api-status { color: #58708f; }
+
