@@ -22,3 +22,18 @@ CREATE TABLE IF NOT EXISTS applications (
 
 CREATE INDEX IF NOT EXISTS applications_user_updated_idx ON applications(user_id, updated_at DESC);
 
+CREATE TABLE IF NOT EXISTS resumes (
+  user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS analyses (
+  application_id UUID PRIMARY KEY REFERENCES applications(id) ON DELETE CASCADE,
+  score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+  matched_keywords JSONB NOT NULL,
+  missing_keywords JSONB NOT NULL,
+  suggestions JSONB NOT NULL,
+  provider TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

@@ -114,14 +114,14 @@ Two things worth designing deliberately (and worth mentioning in interviews):
 
 ## Milestone 2 — AI Resume Scoring (Week 2)
 
-- [ ] Design the prompt: input = resume text + job description, output = structured JSON (score, matched keywords, gaps)
+- [x] Design the prompt: input = resume text + job description, output = structured JSON (score, matched keywords, gaps)
 - [ ] Implement structured output (Claude tool use / OpenAI function calling / Gemini `responseSchema` / Groq's OpenAI-compatible JSON mode) so you get reliable JSON back, not free text you have to regex
-- [ ] Wrap the LLM call in a single `analyzeResume()` function so the provider is swappable behind one interface
-- [ ] Add validation + retry logic for malformed LLM responses (this is the detail worth talking about in interviews)
-- [ ] Backend route: `POST /applications/:id/analyze`
-- [ ] Frontend: paste/upload resume once, store it; trigger analysis per application
-- [ ] Display score + keyword gaps in the UI
-- [ ] Add resume bullet suggestions (targeted tweaks, not full rewrite) as a second AI call or same call, extended
+- [x] Wrap the LLM call in a single `analyzeResume()` function so the provider is swappable behind one interface
+- [x] Add validation + retry logic for malformed LLM responses (this is the detail worth talking about in interviews)
+- [x] Backend route: `POST /applications/:id/analyze`
+- [x] Frontend: paste/upload resume once, store it; trigger analysis per application
+- [x] Display score + keyword gaps in the UI
+- [x] Add resume bullet suggestions (targeted tweaks, not full rewrite) as a second AI call or same call, extended
 
 **Milestone check:** Given a job description already in the system, you can click "Analyze" and see a score + suggestions come back reliably.
 
