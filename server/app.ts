@@ -34,5 +34,9 @@ export function createApp(store: ApplicationStore = new MemoryApplicationStore()
   app.delete("/api/applications/:id", async (request, response) => (await store.remove(userId(request), request.params.id)) ? response.sendStatus(204) : response.sendStatus(404));
   app.post("/api/applications/:id/analyze", async (request, response) => { const application = await store.find(userId(request), request.params.id); const resume = await resumes.getResume(userId(request)); if (!application) return response.sendStatus(404); if (!resume) return response.status(400).json({ error: "Save your base resume before analyzing." }); try { const result = analyzer ? await analyzeWithRetry(resume, application.jobDescription, analyzer) : await analyzeWithRetry(resume, application.jobDescription); await resumes.saveAnalysis(application.id, result); return response.json(result); } catch { return response.status(502).json({ error: "Analysis service is unavailable. Please try again." }); } });
   app.get("/api/applications/:id/analysis", async (request, response) => { const application = await store.find(userId(request), request.params.id); if (!application) return response.sendStatus(404); const result = await resumes.getAnalysis(application.id); return result ? response.json(result) : response.sendStatus(404); });
+  app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+    console.error("API request failed", error);
+    response.status(500).json({ error: "The database is unavailable. Confirm Docker is running and that DATABASE_URL is correct." });
+  });
   return app;
 }
