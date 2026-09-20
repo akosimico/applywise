@@ -88,8 +88,8 @@ Two things worth designing deliberately (and worth mentioning in interviews):
 
 - [ ] Define exact feature scope for v1 (don't let this grow — see "Cut list" below)
 - [ ] Choose stack: Frontend (React/Next.js), Backend (Node or FastAPI), DB (Postgres)
-- [ ] Set up repo, README skeleton, `.gitignore`, license
-- [ ] Set up local dev environment (DB running, hello-world frontend + backend talking to each other)
+- [x] Set up repo, README skeleton, `.gitignore`, license
+- [x] Set up local dev environment (DB running, hello-world frontend + backend talking to each other)
 - [ ] Create a simple architecture diagram (even hand-drawn/Excalidraw is fine) — you'll refine this later for the README
 - [ ] Choose LLM provider(s) — Claude, OpenAI, Gemini (free tier via AI Studio), and/or Groq (fast, OpenAI-compatible API, hosts open models like Llama) are all viable
 - [ ] Get API access sorted (API key(s), test a basic call works)
@@ -100,11 +100,11 @@ Two things worth designing deliberately (and worth mentioning in interviews):
 
 ## Milestone 1 — Core CRUD App (Week 1)
 
-- [ ] Data model: `applications` table (company, role, status, date_applied, job_description, notes, url)
+- [x] Data model: `applications` table (company, role, status, date_applied, job_description, notes, url)
 - [ ] Auth (simple email/password or magic link — don't overbuild this)
-- [ ] API routes: create, read, update, delete application
-- [ ] Frontend: list view of applications (table or cards)
-- [ ] Frontend: add/edit application form
+- [x] API routes: create, read, update, delete application
+- [x] Frontend: list view of applications (table or cards)
+- [x] Frontend: add/edit application form
 - [ ] Status field with a defined set of stages (Applied → Interview → Offer/Rejected)
 - [ ] Basic styling pass — doesn't need to be fancy, needs to not look broken
 
