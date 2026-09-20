@@ -5,6 +5,7 @@ import { MemoryApplicationStore } from "../server/store.js";
 import { MemoryUserStore } from "../server/auth.js";
 import { MemoryResumeStore } from "../server/resume-store.js";
 import { LocalAnalyzer } from "../server/analysis.js";
+import { runFollowUpSweep } from "../server/follow-up.js";
 
 describe("health endpoint", () => {
   it("reports that the API is running", async () => {
@@ -12,6 +13,10 @@ describe("health endpoint", () => {
     expect(response.status).toBe(200);
     expect(response.body.message).toBe("Applywise API is running");
   });
+});
+
+describe("follow-up automation", () => {
+  it("flags old applied applications and leaves active stages alone", async () => { const store = new MemoryApplicationStore(); const old = new Date(Date.now() - 12 * 86400000).toISOString().slice(0,10); const applied = await store.create("demo-user", {company:"Old Co",role:"Dev",status:"Applied",dateApplied:old,jobDescription:"",notes:"",url:""}); await store.create("demo-user", {company:"Interview Co",role:"Dev",status:"Interview",dateApplied:old,jobDescription:"",notes:"",url:""}); expect(await runFollowUpSweep(store, 10)).toBe(1); expect((await store.find("demo-user", applied.id))?.needsFollowup).toBe(true); });
 });
 
 describe("resume analysis API", () => {

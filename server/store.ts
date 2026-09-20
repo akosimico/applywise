@@ -8,6 +8,7 @@ export interface ApplicationStore {
   create(userId: string, input: ApplicationInput): Promise<Application>;
   update(userId: string, id: string, input: ApplicationInput): Promise<Application | undefined>;
   remove(userId: string, id: string): Promise<boolean>;
+  flagStaleApplications(days: number): Promise<number>;
 }
 
 const mapApplication = (row: Record<string, unknown>): Application => ({
@@ -32,6 +33,7 @@ export class PostgresApplicationStore implements ApplicationStore {
     return result.rows[0] && mapApplication(result.rows[0]);
   }
   async remove(userId: string, id: string) { const result = await this.pool.query("DELETE FROM applications WHERE id=$1 AND user_id=$2", [id, userId]); return result.rowCount === 1; }
+  async flagStaleApplications(days: number) { const result = await this.pool.query("UPDATE applications SET needs_followup=true WHERE status='Applied' AND date_applied <= CURRENT_DATE - $1::integer AND needs_followup=false", [days]); return result.rowCount ?? 0; }
 }
 
 export class MemoryApplicationStore implements ApplicationStore {
@@ -41,5 +43,5 @@ export class MemoryApplicationStore implements ApplicationStore {
   async create(userId: string, input: ApplicationInput) { const now = new Date().toISOString(); const item: Application = { id: randomUUID(), userId, ...input, needsFollowup: false, createdAt: now, updatedAt: now }; this.items.unshift(item); return item; }
   async update(userId: string, id: string, input: ApplicationInput) { const item = await this.find(userId, id); if (!item) return undefined; Object.assign(item, input, { updatedAt: new Date().toISOString(), needsFollowup: input.status === "Applied" ? item.needsFollowup : false }); return item; }
   async remove(userId: string, id: string) { const size = this.items.length; this.items = this.items.filter(item => !(item.userId === userId && item.id === id)); return this.items.length !== size; }
+  async flagStaleApplications(days: number) { const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days); let count = 0; this.items.forEach(item => { if (item.status === "Applied" && item.dateApplied && new Date(item.dateApplied) <= cutoff && !item.needsFollowup) { item.needsFollowup = true; count++; } }); return count; }
 }
-

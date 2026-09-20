@@ -37,3 +37,9 @@ CREATE TABLE IF NOT EXISTS analyses (
   provider TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE TABLE IF NOT EXISTS automation_runs (
+  id UUID PRIMARY KEY,
+  ran_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  flagged_count INTEGER NOT NULL
+);

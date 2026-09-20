@@ -129,12 +129,12 @@ Two things worth designing deliberately (and worth mentioning in interviews):
 
 ## Milestone 3 — Automation Layer (Week 3)
 
-- [ ] Decide the automation trigger: cron job vs. scheduled serverless function
+- [x] Decide the automation trigger: in-process daily scheduled job (migrate to scheduled serverless at deployment)
 - [ ] Logic: if `status = Applied` and no update in N days → flag for follow-up
 - [ ] Implement the scheduled job (node-cron locally, or a scheduled function on your host)
-- [ ] Surface flagged applications in the UI (e.g., a "Needs follow-up" section)
+- [x] Surface flagged applications in the UI (e.g., a "Needs follow-up" section)
 - [ ] (Stretch) Email/Slack notification instead of just in-app flag
-- [ ] Log automation runs somewhere so you can demo "yes, this actually runs on a schedule"
+- [x] Log automation runs somewhere so you can demo "yes, this actually runs on a schedule"
 
 **Milestone check:** You can demonstrate the automation working — either live or via logs — without you manually triggering it.
 
