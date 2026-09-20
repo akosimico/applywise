@@ -8,6 +8,7 @@
     "dev:server": "tsx watch server/index.ts",
     "dev:client": "vite",
     "test": "vitest run",
+    "db:debug": "tsx server/debug-db.ts",
     "build": "tsc --noEmit && vite build"
   },
   "repository": {
