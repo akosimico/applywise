@@ -1036,9 +1036,6 @@ select:focus {
   .tracker-filters {
     grid-template-columns: 1fr;
   }
-  .recent-searches {
-    display: none;
-  }
   .card {
     padding: 18px;
   }
