@@ -534,7 +534,7 @@ function App() {
               placeholder="Add a skill"
             />
             <label>
-              City / area
+              City / State
               <input
                 value={profile.location}
                 placeholder="e.g. Quezon City, Metro Manila"
