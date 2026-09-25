@@ -10,11 +10,14 @@ import {
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import {
+  RefreshCw,
   ArrowRight,
   BriefcaseBusiness,
   Check,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  EyeOff,
   ExternalLink,
   FileText,
   LayoutDashboard,
@@ -60,6 +63,7 @@ type Match = {
   reasons: string[];
   source: string;
 };
+type RecentJob = Pick<Match, "id" | "title" | "company" | "url">;
 type ToastState = {
   message: string;
   tone: "success" | "error";
@@ -203,7 +207,7 @@ function App() {
   const [modal, setModal] = useState<"login" | "register" | "about" | null>(
       null,
     ),
-    [auth, setAuth] = useState({ email: "", password: "" }),
+    [auth, setAuth] = useState({ email: "", password: "", confirmPassword: "" }),
     [authBusy, setAuthBusy] = useState(false);
   const [apps, setApps] = useState<Application[]>([]),
     [profile, setProfile] = useState<Profile | null>(null),
@@ -215,10 +219,12 @@ function App() {
   const [workspaceModal, setWorkspaceModal] = useState<
     "add" | "matches" | null
   >(null);
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [appPage, setAppPage] = useState(0),
     [matchPage, setMatchPage] = useState(0),
     [appFilter, setAppFilter] = useState<Status | "All">("All"),
     [appQuery, setAppQuery] = useState(""),
+    [recentJobs, setRecentJobs] = useState<RecentJob[]>([]),
     [appDateFilter, setAppDateFilter] = useState<
       "All" | "Today" | "7 days" | "30 days"
     >("All");
@@ -253,9 +259,41 @@ function App() {
     load();
     return () => clearTimeout(timer.current);
   }, [userId]);
+  useEffect(() => {
+    const key = `applywise-recent-jobs-${userId}`;
+    try {
+      const saved = userId ? JSON.parse(localStorage.getItem(key) || "[]") : [];
+      setRecentJobs(Array.isArray(saved) ? saved.slice(0, 10) : []);
+    } catch {
+      setRecentJobs([]);
+    }
+  }, [userId]);
+  const recordJobView = (match: RecentJob) => {
+    if (!userId) return;
+    const job: RecentJob = {
+      id: match.id,
+      title: match.title,
+      company: match.company,
+      url: match.url,
+    };
+    setRecentJobs((current) => {
+      const next = [
+        job,
+        ...current.filter(
+          (item) =>
+            item.company.toLowerCase() !== job.company.toLowerCase() ||
+            item.title.toLowerCase() !== job.title.toLowerCase(),
+        ),
+      ].slice(0, 10);
+      localStorage.setItem(`applywise-recent-jobs-${userId}`, JSON.stringify(next));
+      return next;
+    });
+  };
   async function signIn(e: FormEvent) {
     e.preventDefault();
     if (!modal || modal === "about") return;
+    if (modal === "register" && auth.password !== auth.confirmPassword)
+      return tell("Passwords do not match.", "error");
     setAuthBusy(true);
     const r = await fetch(`/api/auth/${modal}`, {
         method: "POST",
@@ -268,7 +306,7 @@ function App() {
     localStorage.setItem("applywise-user-id", d.userId);
     setUserId(d.userId);
     setModal(null);
-    setAuth({ email: "", password: "" });
+    setAuth({ email: "", password: "", confirmPassword: "" });
     tell("Welcome to Applywise.");
   }
   async function upload(file: File) {
@@ -408,16 +446,7 @@ function App() {
         <div className="nav-actions">
           <button
             className="nav-link"
-            onClick={() => setWorkspaceModal("matches")}
-          >
-            Discover
-          </button>
-          <button
-            className="nav-link"
-            onClick={() => {
-              localStorage.removeItem("applywise-user-id");
-              setUserId("");
-            }}
+            onClick={() => setLogoutConfirm(true)}
           >
             <LogOut size={16} />
             Log out
@@ -441,7 +470,7 @@ function App() {
             onClick={() => setWorkspaceModal("matches")}
           >
             <ScanSearch size={17} />
-            Discover jobs
+            Discover Jobs
           </button>
           <button className="primary" onClick={() => setWorkspaceModal("add")}>
             <Plus size={17} />
@@ -634,21 +663,28 @@ function App() {
             )}
           </section>
         </section>
-        <aside className="card tips">
-          <span className="icon-well">
-            <Sparkles size={18} />
-          </span>
-          <h2>Keep your search warm</h2>
-          <p>
-            When an application is quiet for a while, a thoughtful follow-up can
-            help it move forward.
-          </p>
-          <button
-            className="text-button"
-            onClick={() => setWorkspaceModal("matches")}
-          >
-            Discover fresh roles <ArrowRight size={14} />
-          </button>
+        <aside className="card recent-searches">
+          <h2>Recently viewed</h2>
+          <p>Roles you opened from Discover matches.</p>
+          {recentJobs.length ? (
+            <ul className="recent-jobs-list">
+              {recentJobs.map((job) => (
+                <li key={`${job.company}-${job.title}`}>
+                  <a
+                    href={job.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => recordJobView(job)}
+                  >
+                    <b>{job.title}</b>
+                    <span>{job.company}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="recent-jobs-empty">No jobs viewed yet.</p>
+          )}
         </aside>
       </section>
       {false && matches.length > 0 && (
@@ -660,7 +696,7 @@ function App() {
               text="A clear view of why each role may fit."
             />
             <button className="text-button" onClick={find}>
-              Refresh <ArrowRight size={15} />
+              Refresh <RefreshCw size={15} />
             </button>
           </div>
           <div className="match-grid">
@@ -696,7 +732,12 @@ function App() {
                     <small>via {match.source}</small>
                   </div>
                   <div className="match-actions">
-                    <a href={match.url} target="_blank" rel="noreferrer">
+                    <a
+                      href={match.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => recordJobView(match)}
+                    >
                       View job <ExternalLink size={14} />
                     </a>
                     <button
@@ -731,10 +772,21 @@ function App() {
         totalMatches={matches.length}
         apps={apps}
         addMatch={addMatch}
+        recordJobView={recordJobView}
         refresh={find}
         page={matchPage}
         setPage={setMatchPage}
       />
+      {logoutConfirm && (
+        <LogoutConfirm
+          close={() => setLogoutConfirm(false)}
+          logout={() => {
+            localStorage.removeItem("applywise-user-id");
+            setLogoutConfirm(false);
+            setUserId("");
+          }}
+        />
+      )}
       {busy && (
         <div className="analyzing">
           <LoaderCircle size={18} />
@@ -759,8 +811,12 @@ function Landing({
   open: (x: "login" | "register" | "about" | null) => void;
   modal: "login" | "register" | "about" | null;
   close: () => void;
-  auth: { email: string; password: string };
-  setAuth: (x: { email: string; password: string }) => void;
+  auth: { email: string; password: string; confirmPassword: string };
+  setAuth: (x: {
+    email: string;
+    password: string;
+    confirmPassword: string;
+  }) => void;
   submit: (e: FormEvent) => void;
   busy: boolean;
   toast: ToastState;
@@ -803,12 +859,34 @@ function Landing({
           </div>
         </div>
         <div className="hero-panel">
-          <span>01</span>
-          <strong>Your search, organized.</strong>
-          <p>
-            Track progress, refine your profile, and discover better-fit
-            opportunities.
-          </p>
+          <div className="folder-tab">APPLICATIONS</div>
+          <div className="folder-files">
+            <article className="application-file file-back">
+              <span className="file-mark" />
+              <div>
+                <small>INTERVIEW</small>
+                <strong>Product Designer</strong>
+                <p>Northstar Studio</p>
+              </div>
+            </article>
+            <article className="application-file file-middle">
+              <span className="file-mark" />
+              <div>
+                <small>SCREENING</small>
+                <strong>Frontend Developer</strong>
+                <p>Arc &amp; Co.</p>
+              </div>
+            </article>
+            <article className="application-file file-front">
+              <span className="file-mark complete" />
+              <div>
+                <small>APPLIED</small>
+                <strong>Product Analyst</strong>
+                <p>Horizon Labs</p>
+              </div>
+              <Check size={17} />
+            </article>
+          </div>
         </div>
       </section>
       <section className="landing-grid">
@@ -928,6 +1006,46 @@ function Pagination({
   );
 }
 
+function LogoutConfirm({
+  close,
+  logout,
+}: {
+  close: () => void;
+  logout: () => void;
+}) {
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => event.key === "Escape" && close();
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [close]);
+  return (
+    <div className="modal-backdrop" onMouseDown={close}>
+      <section
+        className="modal logout-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="logout-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <span className="logout-icon">
+          <LogOut size={21} />
+        </span>
+        <p className="overline">LEAVING APPLYWISE</p>
+        <h2 id="logout-title">Log out of your workspace?</h2>
+        <p>Your applications and profile will remain safely saved.</p>
+        <div className="logout-actions">
+          <button className="secondary-action" onClick={close} autoFocus>
+            Stay logged in
+          </button>
+          <button className="primary logout-button" onClick={logout}>
+            Log out
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function WorkspaceModal({
   kind,
   close,
@@ -938,6 +1056,7 @@ function WorkspaceModal({
   totalMatches,
   apps,
   addMatch,
+  recordJobView,
   refresh,
   page,
   setPage,
@@ -951,6 +1070,7 @@ function WorkspaceModal({
   totalMatches: number;
   apps: Application[];
   addMatch: (match: Match) => void;
+  recordJobView: (match: RecentJob) => void;
   refresh: () => void;
   page: number;
   setPage: (page: number) => void;
@@ -1054,8 +1174,8 @@ function WorkspaceModal({
                 title="Possible matches"
                 text="A clear view of why each role may fit."
               />
-              <button className="text-button" onClick={refresh}>
-                Refresh <ArrowRight size={15} />
+              <button className="text-button ad" onClick={refresh}>
+                Refresh  <RefreshCw size={15} />
               </button>
             </div>
             {totalMatches ? (
@@ -1093,7 +1213,12 @@ function WorkspaceModal({
                           <small>via {match.source}</small>
                         </div>
                         <div className="match-actions">
-                          <a href={match.url} target="_blank" rel="noreferrer">
+                          <a
+                            href={match.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={() => recordJobView(match)}
+                          >
                             View job <ExternalLink size={14} />
                           </a>
                           <button
@@ -1141,16 +1266,24 @@ function Modal({
 }: {
   kind: "login" | "register" | "about" | null;
   close: () => void;
-  auth: { email: string; password: string };
-  setAuth: (x: { email: string; password: string }) => void;
+  auth: { email: string; password: string; confirmPassword: string };
+  setAuth: (x: {
+    email: string;
+    password: string;
+    confirmPassword: string;
+  }) => void;
   submit: (e: FormEvent) => void;
   busy: boolean;
   open: (x: "login" | "register" | "about" | null) => void;
 }) {
   const focus = useRef<HTMLInputElement>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   useEffect(() => {
     if (!kind) return;
     focus.current?.focus();
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     const key = (e: KeyboardEvent) => e.key === "Escape" && close();
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
@@ -1207,26 +1340,80 @@ function Modal({
             </label>
             <label>
               Password
-              <input
-                required
-                minLength={8}
-                type="password"
-                autoComplete={
-                  kind === "login" ? "current-password" : "new-password"
-                }
-                placeholder="At least 8 characters"
-                value={auth.password}
-                onChange={(e) => setAuth({ ...auth, password: e.target.value })}
-              />
+              <span className="password-field">
+                <input
+                  required
+                  minLength={8}
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={
+                    kind === "login" ? "current-password" : "new-password"
+                  }
+                  placeholder="At least 8 characters"
+                  value={auth.password}
+                  onChange={(e) =>
+                    setAuth({ ...auth, password: e.target.value })
+                  }
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              </span>
               <small>
                 {kind === "register"
                   ? "Use at least 8 characters."
                   : "Enter the password for your account."}
               </small>
             </label>
+            {kind === "register" && (
+              <label>
+                Confirm password
+                <span className="password-field">
+                  <input
+                    required
+                    minLength={8}
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="Re-enter your password"
+                    value={auth.confirmPassword}
+                    onChange={(e) =>
+                      setAuth({ ...auth, confirmPassword: e.target.value })
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() =>
+                      setShowConfirmPassword((visible) => !visible)
+                    }
+                    aria-label={
+                      showConfirmPassword
+                        ? "Hide confirmed password"
+                        : "Show confirmed password"
+                    }
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={17} />
+                    ) : (
+                      <Eye size={17} />
+                    )}
+                  </button>
+                </span>
+              </label>
+            )}
             <button className="primary full" disabled={busy}>
               {busy && <LoaderCircle className="spin" size={16} />}{" "}
-              {kind === "login" ? "Log in" : "Create account"}
+              {busy
+                ? kind === "login"
+                  ? "Logging in..."
+                  : "Creating..."
+                : kind === "login"
+                  ? "Log in"
+                  : "Create account"}
               <ArrowRight size={16} />
             </button>
           </form>
