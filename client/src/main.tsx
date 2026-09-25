@@ -236,7 +236,7 @@ function App() {
     setToast({ message, tone, id });
     timer.current = window.setTimeout(
       () => setToast((x) => (x?.id === id ? null : x)),
-      3500,
+      3000,
     );
   };
   const normalize = (app: Application) => ({
