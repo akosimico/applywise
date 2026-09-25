@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://applywise-5hki.onrender.com/api/:path*"
+    }
+  ]
+}

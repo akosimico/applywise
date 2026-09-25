@@ -806,6 +806,22 @@ select:focus {
 .logout-modal {
   width: min(100%, 410px);
 }
+.service-notice {
+  width: min(100%, 430px);
+}
+.service-notice-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 20px;
+  place-items: center;
+  border-radius: 12px;
+  background: #eef3ff;
+  color: #2864dc;
+}
+.service-notice-action {
+  margin-top: 24px;
+}
 .logout-icon {
   display: grid;
   width: 42px;

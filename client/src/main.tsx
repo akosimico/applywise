@@ -821,6 +821,7 @@ function Landing({
   busy: boolean;
   toast: ToastState;
 }) {
+  const [showRenderNotice, setShowRenderNotice] = useState(true);
   return (
     <main className="landing">
       <nav className="site-nav">
@@ -926,6 +927,9 @@ function Landing({
         </div>
         <small>© {new Date().getFullYear()} Applywise</small>
       </footer>
+      {showRenderNotice && (
+        <RenderNotice close={() => setShowRenderNotice(false)} />
+      )}
       <Modal
         kind={modal}
         close={close}
@@ -937,6 +941,40 @@ function Landing({
       />
       <Toast toast={toast} />
     </main>
+  );
+}
+function RenderNotice({ close }: { close: () => void }) {
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => event.key === "Escape" && close();
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [close]);
+  return (
+    <div className="modal-backdrop" onMouseDown={close}>
+      <section
+        className="modal service-notice"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="service-notice-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button className="close" aria-label="Close notice" onClick={close}>
+          <X />
+        </button>
+        <span className="service-notice-icon">
+          <RefreshCw size={21} />
+        </span>
+        <p className="overline">QUICK NOTE</p>
+        <h2 id="service-notice-title">The app may take a moment to start.</h2>
+        <p>
+          Applywise is hosted on Render's free plan. If it has been inactive,
+          the first request may take up to a minute while the service wakes up.
+        </p>
+        <button className="primary full service-notice-action" onClick={close}>
+          Got it
+        </button>
+      </section>
+    </div>
   );
 }
 const Feature = ({
