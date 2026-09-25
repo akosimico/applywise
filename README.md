@@ -1,135 +1,189 @@
 # Applywise
 
-Applywise is a job-search workspace for organizing applications, finding resume-aligned opportunities, and identifying timely follow-ups. It combines an application tracker with resume import, job matching, and resume-to-role analysis.
+> A full-stack job-application workspace that helps job seekers organize applications, discover relevant roles, and tailor resumes to job descriptions from one focused dashboard.
 
-## Features
+## Overview
 
-- Account registration and sign-in
-- Application tracking across Applied, Screening, Interview, Offer, and Rejected stages
-- Resume PDF import with profile extraction
-- Job discovery and match scoring based on a candidate profile
-- Resume-to-job-description analysis, with an optional OpenAI-powered provider
-- Automated follow-up flags for stale applications
-- Search, status, and date filters for the application tracker
+Job searches often become fragmented across spreadsheets, job boards, saved links, and resume versions. Applywise centralizes that workflow: users can track every application stage, upload a resume to build a search profile, review job matches, and analyze how a resume aligns with a role.
+
+The application separates a React client from an Express API and persists user data in PostgreSQL. Optional external providers add live job discovery and AI-assisted resume analysis without preventing the core tracker from working locally.
+
+## Key Features
+
+- **Application tracker** — Create, search, filter, update, and remove applications across five hiring stages.
+- **Account access** — Register and log in with email and password credentials.
+- **Resume import** — Upload a PDF resume; Applywise extracts text and derives a candidate profile.
+- **Job matching** — Search external listings using target roles, skills, and location, then add a match to the tracker.
+- **Resume analysis** — Compare a saved resume with a job description to identify matched keywords, gaps, and suggested improvements.
+- **Follow-up reminders** — A daily server process flags stale applied applications after a configurable number of days.
+- **Responsive workspace** — Use status, date, and keyword filters to keep an active search organized.
+
+## How It Works
+
+1. A user creates an account or logs in.
+2. The user adds an application manually or imports a resume PDF to create a search profile.
+3. The React client calls the REST API for tracking, profile, discovery, and analysis actions.
+4. The Express API validates input and stores applications, resumes, analyses, profiles, and matches in PostgreSQL.
+5. Optional job-search and OpenAI providers enrich matching and resume-analysis workflows.
+6. A scheduled server sweep marks older applications that need follow-up.
+
+## Tech Stack
+
+| Category | Technologies |
+| --- | --- |
+| Frontend | React 19, Vite, TypeScript, Lucide React |
+| Backend | Node.js, Express 5, TypeScript |
+| Database | PostgreSQL 16, node-postgres |
+| Validation and uploads | Zod, Multer, pdf-parse |
+| AI and job discovery | OpenAI-compatible Chat Completions API, SerpApi |
+| Local development | Docker Compose, tsx, concurrently |
+| Testing | Vitest, Supertest |
 
 ## Architecture
 
-| Layer | Technology |
-| --- | --- |
-| Web client | React 19, Vite, TypeScript |
-| API | Express 5, TypeScript |
-| Database | PostgreSQL 16 |
-| Local database | Docker Compose |
-| Validation | Zod |
-| Testing | Vitest and Supertest |
+The client communicates with the API through `/api` routes. During local development, Vite proxies those calls to Express; the API owns validation, persistence, provider calls, and follow-up automation.
 
-The development server runs the client on `http://localhost:5173` and the API on `http://localhost:3001`. Vite proxies `/api` requests to the API during local development.
+```text
+React + Vite client
+        |
+        | HTTPS / REST
+        v
+Express API
+  |       |       |
+  |       |       +-- OpenAI-compatible analysis (optional)
+  |       +---------- SerpApi job search (optional)
+  v
+PostgreSQL
+```
 
-## Prerequisites
+## Project Structure
+
+```text
+applywise/
+├── client/              React client and styles
+├── server/              Express API, data stores, and automation
+├── shared/              Shared types and domain utilities
+├── db/schema.sql        PostgreSQL schema
+├── tests/               API and behavior tests
+├── docker-compose.yml   Local PostgreSQL service
+└── .env.example         Environment-variable template
+```
+
+## Getting Started
+
+### Prerequisites
 
 - Node.js 20 or later
 - npm
-- Docker Desktop and Docker Compose (for the local PostgreSQL database)
+- Docker Desktop with Docker Compose
 
-## Local setup
+### Install dependencies
 
-1. Install dependencies:
+```powershell
+npm install
+```
 
-   ```powershell
-   npm install
-   ```
+### Configure environment variables
 
-2. Create a local environment file:
-
-   ```powershell
-   Copy-Item .env.example .env
-   ```
-
-3. Start PostgreSQL:
-
-   ```powershell
-   docker compose up -d
-   ```
-
-4. Initialize the database schema:
-
-   ```powershell
-   Get-Content -Raw db/schema.sql | docker compose exec -T postgres psql -U applywise -d applywise
-   ```
-
-5. Start the client and API:
-
-   ```powershell
-   npm run dev
-   ```
-
-Open `http://localhost:5173`. The health endpoint is available at `http://localhost:3001/api/health`.
-
-PostgreSQL is mapped to `127.0.0.1:15432` locally to avoid conflicts with a locally installed database.
-
-## Environment variables
-
-Copy `.env.example` to `.env`; never commit `.env` or production credentials.
+```powershell
+Copy-Item .env.example .env
+```
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `PORT` | Yes | Port used by the API. Defaults to `3001`. |
+| `PORT` | Yes | API port; defaults to `3001`. |
 | `DATABASE_URL` | Yes | PostgreSQL connection string. |
-| `OPENAI_API_KEY` | No | Enables OpenAI-backed resume analysis. Without it, Applywise uses a deterministic local analysis fallback. |
-| `OPENAI_MODEL` | No | Model used for OpenAI-backed analysis. Defaults to `gpt-4o-mini`. |
+| `OPENAI_API_KEY` | No | Enables OpenAI-backed resume analysis. Without it, a local deterministic fallback is used. |
+| `OPENAI_MODEL` | No | OpenAI model for resume analysis; defaults to `gpt-4o-mini`. |
 | `SERPAPI_API_KEY` | No | Enables external job discovery. |
-| `FOLLOW_UP_DAYS` | No | Days after an application is created before it is flagged for follow-up. Defaults to `10`. |
+| `FOLLOW_UP_DAYS` | No | Number of days before an applied role is flagged for follow-up; defaults to `10`. |
 
-## Quality checks
+Never commit `.env` or add secrets to client-side code.
 
-Run these checks before releasing a change:
+### Set up the database
+
+```powershell
+docker compose up -d
+Get-Content -Raw db/schema.sql | docker compose exec -T postgres psql -U applywise -d applywise
+```
+
+Local PostgreSQL is available at `127.0.0.1:15432`.
+
+### Run locally
+
+```powershell
+npm run dev
+```
+
+- Client: `http://localhost:5173`
+- API health check: `http://localhost:3001/api/health`
+
+## API Overview
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `POST` | `/api/auth/register` | Create an account. |
+| `POST` | `/api/auth/login` | Validate account credentials. |
+| `GET`, `POST` | `/api/applications` | List or create applications. |
+| `GET`, `PUT`, `DELETE` | `/api/applications/:id` | Read, update the status of, or remove an application. |
+| `PUT`, `GET` | `/api/resume` | Save or retrieve resume text. |
+| `POST` | `/api/resume/pdf` | Import a resume PDF and create a candidate profile. |
+| `POST` | `/api/applications/:id/analyze` | Analyze resume alignment for an application. |
+| `GET`, `PUT` | `/api/profile` | Retrieve or update the candidate profile. |
+| `POST` | `/api/job-matches/search` | Search and save matching job listings. |
+| `GET` | `/api/health` | Check API availability. |
+
+## Database
+
+PostgreSQL stores the application's core data. `users` own `applications`, `resumes`, and `candidate_profiles`; deleting a user cascades to their related records. Each application can have one saved resume analysis. `job_matches` are unique per user and source URL, and applications are indexed by user and most recent update for tracker queries.
+
+## Security
+
+- Passwords are salted and hashed with Node.js `scrypt`.
+- Request bodies are validated with Zod before persistence.
+- Resume uploads are restricted to PDF files up to 5 MB and processed in memory.
+- SQL queries use parameterized values through `pg`.
+- Secrets are configured through environment variables.
+
+## Testing
+
+Run the test suite and production build checks with:
 
 ```powershell
 npm test
 npm run build
 ```
 
-`npm run build` type-checks the project and creates the client production bundle in `dist/client`.
+The automated tests cover API health, authentication, application lifecycle operations, follow-up automation, profile extraction, and resume analysis behavior.
 
-## Production release checklist
+## Engineering Decisions
 
-Before exposing Applywise to users, ensure that the following are complete:
+### Separate client and API
 
-- Use a managed, backed-up PostgreSQL database and run `db/schema.sql` against it.
-- Store all environment variables in the runtime's secret manager; do not place secrets in client-side code or source control.
-- Serve the client over HTTPS and route `/api` requests to the API over the same trusted origin, or configure CORS to an explicit client origin.
-- Add health checks for `GET /api/health`, database monitoring, centralized logs, and alerting.
-- Configure database backups and verify a restore procedure.
-- Set resource limits for uploads and request bodies at the edge as well as in the application.
-- Run the quality checks above from a clean dependency install as part of the release pipeline.
+The Vite client and Express API are separate so the interface can remain focused on user experience while validation, database access, provider integrations, and automation stay on the server.
 
-### Required security work before a public launch
+### PostgreSQL for related job-search data
 
-This repository is not yet safe for an internet-facing multi-user deployment. The API currently accepts the `x-user-id` request header as the caller's identity. A user could alter that header and access another user's data. The registration and login endpoints also return an ID without creating a server-side session or issuing a signed access token.
+Applications, resumes, analyses, profiles, and matches have clear ownership relationships. PostgreSQL provides relational constraints, cascading deletes, JSON storage for structured analysis results, and indexed tracker queries.
 
-Replace this prototype identity mechanism with verified authentication and server-side authorization before launch. At minimum, use signed, expiring sessions or tokens; derive the user identity from verified credentials on the server; and remove all trust in client-supplied user identifiers. Restrict CORS to approved origins and review rate limiting, password-reset flows, security headers, and audit logging as part of the same release.
+### Optional external providers
 
-## Project layout
+Job search and OpenAI analysis are enabled only when their respective API keys are configured. The local analysis fallback keeps the resume-analysis flow usable during local development without an external key.
 
-```text
-client/             React application
-server/             Express API, data stores, analysis, and follow-up logic
-shared/             Types and shared domain utilities
-db/schema.sql       PostgreSQL schema
-tests/              API and behavior tests
-docker-compose.yml  Local PostgreSQL service
-```
+## What I Learned
 
-## Useful commands
+- Designing and validating REST API workflows with Express and Zod.
+- Modeling user-owned resources and relationships in PostgreSQL.
+- Handling in-memory PDF uploads and turning extracted text into application data.
+- Combining optional external APIs with reliable local fallbacks.
+- Testing API behavior and background follow-up logic with Vitest and Supertest.
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Run the Vite client and API in watch mode. |
-| `npm run dev:client` | Run only the Vite client. |
-| `npm run dev:server` | Run only the API in watch mode. |
-| `npm test` | Run the automated test suite. |
-| `npm run build` | Type-check and build the client bundle. |
-| `npm run db:debug` | Run the database diagnostic script. |
+## Known Limitations
+
+- External job discovery requires `SERPAPI_API_KEY`.
+- OpenAI-backed analysis requires `OPENAI_API_KEY`; otherwise the local fallback is used.
+- The current client supplies the user identifier in an `x-user-id` header. Replace this prototype mechanism with verified server-side authentication before a public multi-user release.
+- When the API runs on a sleeping free-tier service, the first request may be delayed while it starts.
 
 ## License
 
